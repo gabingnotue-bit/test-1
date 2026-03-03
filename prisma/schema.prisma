@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  DESIGNER
+  TAILOR
+  VIEWER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum AssetType {
+  SKETCH_FRONT
+  SKETCH_BACK
+  INSPIRATION
+  CLIENT_PHOTO
+  RENDER
+  PATTERN_PDF
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  createdInvites Invite[]
+  clients        ClientProfile[]
+  projects       Project[]
+}
+
+model Invite {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  email       String
+  role        Role
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+  createdById String
+
+  createdBy User @relation(fields: [createdById], references: [id])
+}
+
+model ClientProfile {
+  id              String   @id @default(cuid())
+  name            String
+  notes           String?
+  measurementsJson String
+  preferencesJson String
+  photosJson      String
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  createdBy User      @relation(fields: [createdById], references: [id])
+  projects  Project[]
+}
+
+model Project {
+  id              String   @id @default(cuid())
+  clientProfileId String
+  title           String
+  description     String?
+  gender          Gender
+  createdById     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clientProfile   ClientProfile   @relation(fields: [clientProfileId], references: [id])
+  createdBy       User            @relation(fields: [createdById], references: [id])
+  assets          Asset[]
+  modelVersions   ModelVersion[]
+  patternVersions PatternVersion[]
+  costScenarios   CostScenario[]
+  costVersions    CostVersion[]
+}
+
+model Asset {
+  id           String    @id @default(cuid())
+  type         AssetType
+  filePath     String
+  mimeType     String
+  originalName String
+  projectId    String?
+  createdAt    DateTime  @default(now())
+
+  project Project? @relation(fields: [projectId], references: [id])
+}
+
+model ModelVersion {
+  id            String   @id @default(cuid())
+  projectId      String
+  version        Int
+  specJson       String
+  notes          String?
+  renderAssetId  String?
+  isValidated    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, version])
+}
+
+model PatternVersion {
+  id             String   @id @default(cuid())
+  projectId       String
+  version         Int
+  modelVersionId  String
+  pdfAssetId      String
+  metaJson        String
+  createdAt       DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, version])
+}
+
+model CostScenario {
+  id         String   @id @default(cuid())
+  projectId  String
+  name       String
+  isDefault  Boolean @default(false)
+
+  project Project @relation(fields: [projectId], references: [id])
+  versions CostVersion[]
+}
+
+model CostVersion {
+  id               String   @id @default(cuid())
+  projectId        String
+  scenarioId       String?
+  version          Int
+  modelVersionId   String?
+  patternVersionId String?
+  inputsJson       String
+  resultsJson      String
+  note             String?
+  createdAt        DateTime @default(now())
+
+  project  Project       @relation(fields: [projectId], references: [id])
+  scenario CostScenario? @relation(fields: [scenarioId], references: [id])
+
+  @@unique([projectId, version])
+}
