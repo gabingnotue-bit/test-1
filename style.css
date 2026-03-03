@@ -1,0 +1,20 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #02050d;
+  font-family: "Trebuchet MS", "Segoe UI", Arial, sans-serif;
+}
+
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
